@@ -1,8 +1,35 @@
-import { useState } from 'react';
+import { useState, useEffect } from 'react';
 import { Layout } from './components/Layout';
+import { supabase } from './lib/supabase';
+import type { Vehiculo } from './types';
 
 function App() {
   const [view, setView] = useState<'vehiculos' | 'mantenimientos'>('vehiculos');
+
+  const [vehiculos, setVehiculos] = useState<Vehiculo[]>([]);
+  const [loading, setLoading] = useState(true);
+
+  const fetchVehiculos = async () => {
+    try {
+      setLoading(true);
+      const { data, error } = await supabase
+        .from('vehiculos')
+        .select('*')
+        .order('created_at', { ascending: false });
+
+      if (error) throw error;
+
+      if (data) setVehiculos(data);
+    } catch (error) {
+      console.error('Error al cargar los vehículos:', error);
+    } finally {
+      setLoading(false);
+    }
+  };
+
+  useEffect(() => {
+    fetchVehiculos();
+  }, []);
 
   return (
     <Layout currentView={view} setView={setView}>
