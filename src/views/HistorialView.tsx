@@ -12,8 +12,9 @@ interface HistorialViewProps {
 export const HistorialView: React.FC<HistorialViewProps> = ({ vehiculo, onBack }) => {
     const [mantenimientos, setMantenimientos] = useState<Mantenimiento[]>([]);
     const [loading, setLoading] = useState(true);
-
     const [isModalOpen, setIsModalOpen] = useState(false);
+
+    const [mantenimientoToEdit, setMantenimientoToEdit] = useState<Mantenimiento | null>(null);
 
     const fetchMantenimientos = async () => {
         try {
@@ -37,9 +38,33 @@ export const HistorialView: React.FC<HistorialViewProps> = ({ vehiculo, onBack }
         fetchMantenimientos();
     }, [vehiculo.id]);
 
-    const handleRegistroAdded = () => {
+    const handleDeleteMantenimiento = async (id: string, descripcion: string) => {
+        const confirmacion = window.confirm(`¿Seguro que deseas eliminar este registro?\n"${descripcion}"`);
+        if (!confirmacion) return;
+
+        try {
+            const { error } = await supabase
+                .from('mantenimientos')
+                .delete()
+                .eq('id', id);
+
+            if (error) throw error;
+            fetchMantenimientos();
+        } catch (error) {
+            console.error('Error al borrar mantenimiento:', error);
+            alert('No se pudo eliminar el registro.');
+        }
+    };
+
+    const handleRegistroAddedOrEdited = () => {
         setIsModalOpen(false);
+        setMantenimientoToEdit(null);
         fetchMantenimientos();
+    };
+
+    const handleCloseModal = () => {
+        setIsModalOpen(false);
+        setMantenimientoToEdit(null);
     };
 
     return (
@@ -52,10 +77,13 @@ export const HistorialView: React.FC<HistorialViewProps> = ({ vehiculo, onBack }
                     <h2 className="text-2xl font-bold text-slate-900">
                         Historial de {vehiculo.marca} {vehiculo.modelo}
                     </h2>
-                    <p className="text-sm text-slate-500 mt-1">Matrícula o Bastidor (Opcional en el futuro)</p>
+                    <p className="text-sm text-slate-500 mt-1">Control integral de reparaciones y costes mecánicos.</p>
                 </div>
                 <button
-                    onClick={() => setIsModalOpen(true)}
+                    onClick={() => {
+                        setMantenimientoToEdit(null);
+                        setIsModalOpen(true);
+                    }}
                     className="ml-auto bg-emerald-600 hover:bg-emerald-700 text-white px-4 py-2 rounded-lg text-sm font-medium transition-colors shadow-sm"
                 >
                     + Nuevo Registro
@@ -80,12 +108,14 @@ export const HistorialView: React.FC<HistorialViewProps> = ({ vehiculo, onBack }
                                 <th className="px-6 py-4">Descripción</th>
                                 <th className="px-6 py-4">Km</th>
                                 <th className="px-6 py-4 text-right">Coste</th>
+                                <th className="px-6 py-4 text-center">Acciones</th> {/* <-- Columna de acciones */}
                             </tr>
                         </thead>
                         <tbody className="divide-y divide-slate-100">
                             {mantenimientos.map((mant) => (
                                 <tr key={mant.id} className="hover:bg-slate-50 transition-colors">
                                     <td className="px-6 py-4 font-medium text-slate-900">
+                                        {/* Formateo de fecha limpia a formato local europeo */}
                                         {new Date(mant.fecha).toLocaleDateString()}
                                     </td>
                                     <td className="px-6 py-4">
@@ -100,6 +130,26 @@ export const HistorialView: React.FC<HistorialViewProps> = ({ vehiculo, onBack }
                                     <td className="px-6 py-4 text-right font-medium text-slate-900">
                                         {mant.coste ? `${mant.coste} €` : '-'}
                                     </td>
+                                    {/* Botones de acción dentro de la celda de la tabla */}
+                                    <td className="px-6 py-4 text-center whitespace-nowrap">
+                                        <button
+                                            onClick={() => {
+                                                setMantenimientoToEdit(mant);
+                                                setIsModalOpen(true);
+                                            }}
+                                            className="text-slate-400 hover:text-blue-600 hover:bg-blue-50 p-1 rounded transition-colors mr-1"
+                                            title="Editar registro"
+                                        >
+                                            ✏️
+                                        </button>
+                                        <button
+                                            onClick={() => handleDeleteMantenimiento(mant.id, mant.descripcion)}
+                                            className="text-slate-400 hover:text-red-600 hover:bg-red-50 p-1 rounded transition-colors"
+                                            title="Eliminar registro"
+                                        >
+                                            🗑️
+                                        </button>
+                                    </td>
                                 </tr>
                             ))}
                         </tbody>
@@ -109,12 +159,15 @@ export const HistorialView: React.FC<HistorialViewProps> = ({ vehiculo, onBack }
 
             <Modal
                 isOpen={isModalOpen}
-                onClose={() => setIsModalOpen(false)}
-                title={`Nuevo registro para ${vehiculo.marca} ${vehiculo.modelo}`}
+                onClose={handleCloseModal}
+                title={mantenimientoToEdit ? `Editar registro mecánico` : `Nuevo registro para ${vehiculo.marca} ${vehiculo.modelo}`}
             >
-                <MantenimientoForm vehiculoId={vehiculo.id} onSuccess={handleRegistroAdded} />
+                <MantenimientoForm
+                    vehiculoId={vehiculo.id}
+                    onSuccess={handleRegistroAddedOrEdited}
+                    mantenimientoToEdit={mantenimientoToEdit}
+                />
             </Modal>
-
         </div>
     );
 };
