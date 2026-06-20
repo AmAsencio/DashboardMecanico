@@ -67,7 +67,7 @@ export const MantenimientosGlobalView: React.FC = () => {
                 </div>
             </div>
 
-            <div className="bg-white border border-slate-200 rounded-xl overflow-hidden shadow-sm">
+            <div className="bg-white border border-slate-200 rounded-xl overflow-x-auto shadow-sm">
                 {loading ? (
                     <div className="p-12 text-center flex justify-center">
                         <div className="animate-spin rounded-full h-8 w-8 border-b-2 border-emerald-600"></div>
