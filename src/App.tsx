@@ -5,9 +5,30 @@ import { VehiculoForm } from './components/VehiculoForm';
 import { HistorialView } from './views/HistorialView';
 import { MantenimientosGlobalView } from './views/MantenimientosGlobalView';
 import { supabase } from './lib/supabase';
+import { LoginView } from './views/LoginView';
+import type { Session } from '@supabase/supabase-js'; // <-- Importamos el tipo de sesión
 import type { Vehiculo } from './types';
 
 function App() {
+  const [session, setSession] = useState<Session | null>(null);
+  const [isInitializing, setIsInitializing] = useState(true);
+
+  // Vigila si el usuario inicia o cierra sesión
+  useEffect(() => {
+    supabase.auth.getSession().then(({ data: { session } }) => {
+      setSession(session);
+      setIsInitializing(false);
+    });
+
+    const {
+      data: { subscription },
+    } = supabase.auth.onAuthStateChange((_event, session) => {
+      setSession(session);
+    });
+
+    return () => subscription.unsubscribe();
+  }, []);
+
   const [view, setView] = useState<'vehiculos' | 'mantenimientos'>('vehiculos');
   const [vehiculos, setVehiculos] = useState<Vehiculo[]>([]);
   const [loading, setLoading] = useState(true);
@@ -65,6 +86,19 @@ function App() {
     setIsModalOpen(false);
     setVehiculoToEdit(null);
   };
+
+  if (isInitializing) {
+    return (
+      <div className="min-h-screen bg-slate-50 flex justify-center items-center">
+        <div className="animate-spin rounded-full h-12 w-12 border-b-2 border-emerald-600"></div>
+      </div>
+    );
+  }
+
+  // Si no hay sesión, devolvemos la pantalla de login directamente
+  if (!session) {
+    return <LoginView />;
+  }
 
   return (
     <Layout
