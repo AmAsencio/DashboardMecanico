@@ -1,19 +1,22 @@
 import React, { useState } from 'react';
 import { supabase } from '../lib/supabase';
+import type { Vehiculo } from '../types';
 
 interface VehiculoFormProps {
     onSuccess: () => void;
+    vehiculoToEdit?: Vehiculo | null;
 }
 
-export const VehiculoForm: React.FC<VehiculoFormProps> = ({ onSuccess }) => {
+export const VehiculoForm: React.FC<VehiculoFormProps> = ({ onSuccess, vehiculoToEdit }) => {
     const [loading, setLoading] = useState(false);
+
     const [formData, setFormData] = useState({
-        marca: '',
-        modelo: '',
-        version: '',
-        anio: '',
-        kilometraje_actual: '',
-        combustible: 'Gasolina',
+        marca: vehiculoToEdit?.marca || '',
+        modelo: vehiculoToEdit?.modelo || '',
+        version: vehiculoToEdit?.version || '',
+        anio: vehiculoToEdit?.anio?.toString() || '',
+        kilometraje_actual: vehiculoToEdit?.kilometraje_actual?.toString() || '',
+        combustible: vehiculoToEdit?.combustible || 'Gasolina',
     });
 
     const handleChange = (e: React.ChangeEvent<HTMLInputElement | HTMLSelectElement>) => {
@@ -25,22 +28,35 @@ export const VehiculoForm: React.FC<VehiculoFormProps> = ({ onSuccess }) => {
         setLoading(true);
 
         try {
-            const { error } = await supabase.from('vehiculos').insert([
-                {
-                    marca: formData.marca,
-                    modelo: formData.modelo,
-                    version: formData.version,
-                    anio: parseInt(formData.anio),
-                    kilometraje_actual: parseInt(formData.kilometraje_actual),
-                    combustible: formData.combustible,
-                },
-            ]);
+            const payload = {
+                marca: formData.marca,
+                modelo: formData.modelo,
+                version: formData.version,
+                anio: parseInt(formData.anio),
+                kilometraje_actual: parseInt(formData.kilometraje_actual),
+                combustible: formData.combustible,
+            };
 
-            if (error) throw error;
+            if (vehiculoToEdit) {
+                // Lógica de ACTUALIZAR (Update)
+                const { error } = await supabase
+                    .from('vehiculos')
+                    .update(payload)
+                    .eq('id', vehiculoToEdit.id);
+
+                if (error) throw error;
+            } else {
+                // Lógica de CREAR (Insert)
+                const { error } = await supabase
+                    .from('vehiculos')
+                    .insert([payload]);
+
+                if (error) throw error;
+            }
 
             onSuccess();
         } catch (error) {
-            console.error('Error al guardar el vehículo:', error);
+            console.error('Error al procesar el vehículo:', error);
             alert('Hubo un error al guardar el vehículo.');
         } finally {
             setLoading(false);
@@ -91,7 +107,7 @@ export const VehiculoForm: React.FC<VehiculoFormProps> = ({ onSuccess }) => {
                 disabled={loading}
                 className="w-full mt-6 bg-emerald-600 hover:bg-emerald-700 text-white font-medium py-2 px-4 rounded-lg transition-colors flex justify-center items-center"
             >
-                {loading ? <div className="animate-spin rounded-full h-5 w-5 border-b-2 border-white"></div> : 'Guardar Vehículo'}
+                {loading ? <div className="animate-spin rounded-full h-5 w-5 border-b-2 border-white"></div> : vehiculoToEdit ? 'Actualizar Vehículo' : 'Guardar Vehículo'}
             </button>
         </form>
     );
