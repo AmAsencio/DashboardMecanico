@@ -3,6 +3,7 @@ import { Layout } from './components/Layout';
 import { Modal } from './components/Modal';
 import { VehiculoForm } from './components/VehiculoForm';
 import { HistorialView } from './views/HistorialView';
+import { MantenimientosGlobalView } from './views/MantenimientosGlobalView';
 import { supabase } from './lib/supabase';
 import type { Vehiculo } from './types';
 
@@ -192,15 +193,7 @@ function App() {
           </div>
         )
       ) : (
-        <div>
-          <div className="mb-6">
-            <h2 className="text-2xl font-bold text-slate-900">Historial Mecánico General</h2>
-            <p className="text-sm text-slate-500 mt-1">Lista globalizada de todas las interventions realizadas.</p>
-          </div>
-          <div className="bg-white border border-slate-200 rounded-xl p-6 text-center text-slate-500 shadow-xs">
-            Próximamente mostraremos una tabla con todos los mantenimientos cruzados de la flota.
-          </div>
-        </div>
+        <MantenimientosGlobalView />
       )}
     </Layout>
   );
