@@ -1,1 +1,18 @@
 @import "tailwindcss";
+@tailwind base;
+@tailwind components;
+@tailwind utilities;
+
+/* Añade esto justo debajo de las directivas de Tailwind */
+@layer base {
+
+    button,
+    [role="button"] {
+        @apply cursor-pointer;
+    }
+
+    /* Opcional: Si quieres que los botones deshabilitados vuelvan al cursor normal */
+    button:disabled {
+        @apply cursor-not-allowed opacity-50;
+    }
+}

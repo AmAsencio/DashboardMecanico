@@ -55,8 +55,10 @@ function App() {
   };
 
   useEffect(() => {
-    fetchVehiculos();
-  }, []);
+    if (session) {
+      fetchVehiculos();
+    }
+  }, [session])
 
   const handleDeleteVehiculo = async (id: string, marca: string, modelo: string) => {
     const confirmacion = window.confirm(`¿Estás seguro de que deseas eliminar el ${marca} ${modelo}? Se borrará también todo su historial.`);
@@ -101,8 +103,8 @@ function App() {
   }
 
   return (
-    <Layout
-      currentView={view}
+    <Layout 
+      currentView={view} 
       setView={(v) => {
         setView(v);
         if (v === 'vehiculos') setSelectedVehiculo(null);
