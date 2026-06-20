@@ -1,18 +1,22 @@
 import React, { useState, useEffect } from 'react';
 import { supabase } from '../lib/supabase';
+import { Modal } from '../components/Modal';
+import { MantenimientoForm } from '../components/MantenimientoForm';
 import type { Vehiculo, Mantenimiento } from '../types';
 
 interface HistorialViewProps {
     vehiculo: Vehiculo;
-    onBack: () => void; // Función para volver a la lista de coches
+    onBack: () => void;
 }
 
 export const HistorialView: React.FC<HistorialViewProps> = ({ vehiculo, onBack }) => {
     const [mantenimientos, setMantenimientos] = useState<Mantenimiento[]>([]);
     const [loading, setLoading] = useState(true);
 
-    useEffect(() => {
-        const fetchMantenimientos = async () => {
+    const [isModalOpen, setIsModalOpen] = useState(false);
+
+    const fetchMantenimientos = async () => {
+        try {
             setLoading(true);
             const { data, error } = await supabase
                 .from('mantenimientos')
@@ -20,20 +24,26 @@ export const HistorialView: React.FC<HistorialViewProps> = ({ vehiculo, onBack }
                 .eq('vehiculo_id', vehiculo.id)
                 .order('fecha', { ascending: false });
 
-            if (error) {
-                console.error('Error al cargar historial:', error);
-            } else if (data) {
-                setMantenimientos(data);
-            }
+            if (error) throw error;
+            if (data) setMantenimientos(data);
+        } catch (error) {
+            console.error('Error al cargar historial:', error);
+        } finally {
             setLoading(false);
-        };
+        }
+    };
 
+    useEffect(() => {
         fetchMantenimientos();
     }, [vehiculo.id]);
 
+    const handleRegistroAdded = () => {
+        setIsModalOpen(false);
+        fetchMantenimientos();
+    };
+
     return (
         <div>
-            {/* Cabecera para volver atrás */}
             <div className="flex items-center gap-4 mb-6">
                 <button onClick={onBack} className="text-slate-400 hover:text-slate-600 font-bold text-xl">
                     ←
@@ -44,15 +54,19 @@ export const HistorialView: React.FC<HistorialViewProps> = ({ vehiculo, onBack }
                     </h2>
                     <p className="text-sm text-slate-500 mt-1">Matrícula o Bastidor (Opcional en el futuro)</p>
                 </div>
-                <button className="ml-auto bg-emerald-600 hover:bg-emerald-700 text-white px-4 py-2 rounded-lg text-sm font-medium transition-colors shadow-sm">
+                <button
+                    onClick={() => setIsModalOpen(true)}
+                    className="ml-auto bg-emerald-600 hover:bg-emerald-700 text-white px-4 py-2 rounded-lg text-sm font-medium transition-colors shadow-sm"
+                >
                     + Nuevo Registro
                 </button>
             </div>
 
-            {/* Tabla de mantenimientos */}
             <div className="bg-white border border-slate-200 rounded-xl overflow-hidden shadow-sm">
                 {loading ? (
-                    <div className="p-12 text-center text-slate-500">Cargando historial...</div>
+                    <div className="p-12 text-center flex justify-center">
+                        <div className="animate-spin rounded-full h-8 w-8 border-b-2 border-emerald-600"></div>
+                    </div>
                 ) : mantenimientos.length === 0 ? (
                     <div className="p-12 text-center text-slate-500">
                         No hay registros para este vehículo.
@@ -81,7 +95,7 @@ export const HistorialView: React.FC<HistorialViewProps> = ({ vehiculo, onBack }
                                     </td>
                                     <td className="px-6 py-4 text-slate-700">{mant.descripcion}</td>
                                     <td className="px-6 py-4 text-slate-500">
-                                        {mant.kilometraje_reparacion?.toLocaleString()} km
+                                        {mant.kilometraje_reparacion?.toLocaleString() || '-'} km
                                     </td>
                                     <td className="px-6 py-4 text-right font-medium text-slate-900">
                                         {mant.coste ? `${mant.coste} €` : '-'}
@@ -92,6 +106,15 @@ export const HistorialView: React.FC<HistorialViewProps> = ({ vehiculo, onBack }
                     </table>
                 )}
             </div>
+
+            <Modal
+                isOpen={isModalOpen}
+                onClose={() => setIsModalOpen(false)}
+                title={`Nuevo registro para ${vehiculo.marca} ${vehiculo.modelo}`}
+            >
+                <MantenimientoForm vehiculoId={vehiculo.id} onSuccess={handleRegistroAdded} />
+            </Modal>
+
         </div>
     );
 };
